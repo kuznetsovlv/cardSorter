@@ -3,6 +3,20 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Transport Cards</title>
+	<style type="text/css">
+		div {
+			margin: 10px;
+			border: 2px solid grey;
+		}
+
+		p {
+			border: 1px dashed blue;
+		}
+
+		span {
+			background-color: green;
+		}
+	</style>
 	<script type="text/javascript" src="sorter.js"></script>
 	<script type="text/javascript">
 	(function () {
@@ -14,16 +28,18 @@
 						voyage: '78A',
 						from: 'Madrid',
 						to: 'Barcelona',
-						seat: '45B'
+						seat: '45B',
+						testvalue: 'test'
 					},
-					format: 'Take %vehicle %voyage from %from to %to. ?seat:Seat %seat&.'
+					format: 'Take %vehicle %voyage from %from to %to. ?seat:Seat %seat&~No seat assignment&.'
 				},
 				{
 					data: {
 						vehicle: 'bus',
 						voyage: 'airport',
 						from: 'Barcelona',
-						to: 'Gerona Airport'
+						to: 'Gerona Airport',
+						add: 'additional value'
 					},
 					format: 'Take the %voyage %vehicle from %from to %to. ?seat:Seat %seat&~No seat assignment&.'
 				},
@@ -37,7 +53,7 @@
 						seat: '3A',
 						baggage: '344'
 					},
-					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate. ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg:Baggage drop at ticket counter %baggage.'
+					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate.&~& ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&~&'
 				},
 				{
 					data: {
@@ -49,7 +65,7 @@
 						seat: '7B',
 						baggage: 'auto'
 					},
-					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate. ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg:Baggage drop at ticket counter %baggage.'
+					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate.&~& ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&~&'
 				}
 			],
 			    cards = [];
@@ -65,14 +81,19 @@
 
 			var list = sortCards.apply(this, cards);
 
-			console.log(list);
-			console.log(list.deep);
+			console.log(list.toString());
+			console.log(list.toString(1));
+
+			document.getElementById('strict').appendChild(list.toDOM());
+			document.getElementById('nostrict').appendChild(list.toDOM(1));
+
 		};
 	})()
 	</script>
 
 </head>
 <body>
-
+	<div id="strict"></div>
+	<div id="nostrict"></div>
 </body>
 </html>
