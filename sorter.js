@@ -70,11 +70,11 @@
 			},
 			enumerable: false
 		},
-		deep: {
+		deepness: {
 			get: function () {
 				if (!this.next)
 					return 1;
-				return this.next.deep + 1;
+				return this.next.deepness + 1;
 			},
 			enumerable: false
 		},
@@ -102,9 +102,14 @@
 			value: function (deep) {
 				if (!deep)
 					return this;
-				if (!this.next)
+				if (deep > 0) {
+					if (!this.next)
+						return undefined;
+					return this.next.get(--deep);
+				}
+				if (!this.prev)
 					return undefined;
-				return this.next.get(--deep);
+				return this.prev.get(++deep);
 			},
 			enumerable: false
 		},
