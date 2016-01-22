@@ -94,7 +94,9 @@
 
 			var list = sortCards.apply(this, cards);
 
+			console.log('Strict mode:')
 			console.log(list.toString());
+			console.log('\nNo strict mode:')
 			console.log(list.toString(1));
 
 			document.getElementById('strict').appendChild(list.toDOM());
