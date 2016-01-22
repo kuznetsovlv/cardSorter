@@ -9,6 +9,18 @@
 			border: 2px solid grey;
 		}
 
+		#strict:before {
+			content: "Strict mode:";
+			font-weight: bold;
+			font-size: 20px;
+		}
+
+		#nostrict:before {
+			content: "No strict mode:";
+			font-weight: bold;
+			font-size: 20px;
+		}
+
 		p {
 			border: 1px dashed blue;
 		}
@@ -76,8 +88,6 @@
 			}
 
 			cards.sort(function (a, b) {return Math.random() - 0.5;});
-
-			console.log(cards);
 
 			var list = sortCards.apply(this, cards);
 

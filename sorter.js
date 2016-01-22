@@ -131,28 +131,24 @@
 			enumerable: false
 		},
 
-		getAsString: {
+		_preRepresent: {
 			value: function (nostrict) {
-				this._spans = [];
 				var format = this.format || '',
 				    data = this.data,
 				    used = {},
-				    spans = this._spans;
+				    substitutions = {};
 
 				var r_phrase = '[\\w\\s\\.,:;!?\\$*+=\'\"\\[\\]\\{\\}\\(\\)]*',
 				    r_case = ['=\\w+:', r_phrase].join(''),
 				    r_away = ['\\~', r_phrase].join('');
 
-				var str = format.replace(new RegExp(['(?:(\\W)(\\?\\w+):(?:(', r_case, ')*&:)*(', r_phrase, '))?\\W(%\\w+)\\b(?:(', r_phrase, ')&(', r_away, ')&)?'].join(''), 'g'), function (s, f) {
+				function returnValue (key, value) {
+					substitutions[key] = value.trim().replace(/\s+([\.,!?:;\]\)\}])/g, '$1').replace(/(\s)\s+/g, '$1');
+					used[key] = true;
+					return value;
+				}
 
-					function returnValue (key, value) {
-						used[key] = true;
-						spans.push({
-							key: key,
-							value: value.trim().replace(/\s+([\.,!?:;\]\)\}])/g, '$1').replace(/(\s)\s+/g, '$1')
-						});
-						return value;
-					}
+				var str = format.replace(new RegExp(['(?:(\\W)(\\?\\w+):(?:(', r_case, ')*&:)*(', r_phrase, '))?\\W(%\\w+)\\b(?:(', r_phrase, ')&(?:(', r_away, ')&)?)?'].join(''), 'g'), function (s, f) {
 
 					if (/^\W\%\w+$/.test(s))
 						return s.replace(/\%(\w+)$/, function (s, key, pos, str) {
@@ -209,26 +205,25 @@
 								return returnValue(key, [f, c.exchange].join(''));
 						}
 
-					return returnValue(key, [f, defVal].join(''));
+					return data[key] ? returnValue(key, [f, defVal].join('')) : '';
+
 				}).replace(/\s+([\.,!?:;\]\)\}])/g, '$1').replace(/(\s)\s+/g, '$1');
 
 				if (nostrict) {
 					for (var key in data) {
 						if (used[key])
 							continue;
-						str = [str, [[[key.substr(0, 1).toUpperCase(), key.substr(1)].join(''), data[key]].join(' '), '.'].join('')].join(' ');
+						str = [str, [[[key.substr(0, 1).toUpperCase(), key.substr(1)].join(''), returnValue(key, data[key])].join(' '), '.'].join('')].join(' ');
 					}
 				}
 
-				return str;
+				return {substitutions: substitutions, str: str};
 			},
 			enumerable: false
 		},
 		toString: {
 			value: function (nostrict) {
-				var str = this.getAsString(nostrict);
-
-				delete this._spans;
+				var str = this._preRepresent(nostrict).str;
 
 				if (this.next)
 					str = [str, this.next.toString(nostrict)].join('\n');
@@ -259,33 +254,39 @@
 				    p.className = 'transport_card';
 
 				var format = (this.format || ''),
-				    str = this.getAsString(nostrict),
-				    start = 0;
+				    tmp = this._preRepresent(nostrict),
+				    str = tmp.str,
+				    substitutions = tmp.substitutions,
+				    start = 0,
+				    indexes = [];
 
-				console.log(format);
-				console.log(this._spans);
-				console.log(str);
-
-				for (var i = 0, l = this._spans.length; i < l; ++i) {
-					var spn = this._spans[i],
-					    index = str.indexOf(spn.value, start);
-
-					p.appendChild(_textNode(str.substring(start, index)));
-
-					start = index + spn.value.length;
-					p.appendChild(_spanNode(str.substring(index, start), spn.key));
+				for (var key in substitutions) {
+					var subs = substitutions[key],
+					    index = str.indexOf(subs);
+					indexes.push({index: index, key: key}, {index: index + subs.length});
 				}
 
-				p.appendChild(_textNode(str.substring(start)));
+				indexes.sort(function (a, b) {return a.index - b.index;});
 
+				for (var i = 0, j = 0, l = indexes.length; i < l; ++i) {
 
+					var o = indexes[i],
+					    index = o.index;
 
-				//p.appendChild(_textNode(str));
+					if (i % 2)
+						p.appendChild(_spanNode(str.substring(j, index), o.key));
+					else
+						p.appendChild(_textNode(str.substring(j, index)));
+
+					j = index;
+				}
+
+				p.appendChild(_textNode(str.substring(j)));
 
 				frag.appendChild(p);
 
 				if (this.next)
-					frag.appendChild(this.next.toDOM());
+					frag.appendChild(this.next.toDOM(nostrict));
 				return frag;
 
 			},
