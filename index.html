@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Transport Cards</title>
+	<script type="text/javascript" src="sorter.js"></script>
+	<script type="text/javascript">
+	(function () {
+		window.onload = function () {
+			var srcs = [
+				{
+					data: {
+						vehicle: 'train',
+						voyage: '78A',
+						from: 'Madrid',
+						to: 'Barcelona',
+						seat: '45B'
+					},
+					format: 'Take %vehicle %voyage from %from to %to. ?seat:Seat %seat&.'
+				},
+				{
+					data: {
+						vehicle: 'bus',
+						voyage: 'airport',
+						from: 'Barcelona',
+						to: 'Gerona Airport'
+					},
+					format: 'Take the %voyage %vehicle from %from to %to. ?seat:Seat %seat&~No seat assignment&.'
+				},
+				{
+					data: {
+						from: 'Gerona Airport',
+						vehicle: 'flight',
+						voyage: 'SK455',
+						to: 'Stockholm',
+						gate: '45B',
+						seat: '3A',
+						baggage: '344'
+					},
+					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate. ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg:Baggage drop at ticket counter %baggage.'
+				},
+				{
+					data: {
+						from: 'Stockholm',
+						vehicle: 'flight',
+						voyage: 'SK22',
+						to: 'New York JFK',
+						gate: '22',
+						seat: '7B',
+						baggage: 'auto'
+					},
+					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate. ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg:Baggage drop at ticket counter %baggage.'
+				}
+			],
+			    cards = [];
+
+			for (var i = 0, l = srcs.length; i < l; ++i) {
+				var src = srcs[i];
+				cards.push(new Card (src.data, src.format));
+			}
+
+			cards.sort(function (a, b) {return Math.random() - 0.5;});
+
+			console.log(cards);
+
+			var list = sortCards.apply(this, cards);
+
+			console.log(list);
+			console.log(list.deep);
+		};
+	})()
+	</script>
+
+</head>
+<body>
+
+</body>
+</html>
