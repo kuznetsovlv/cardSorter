@@ -27,6 +27,7 @@
 
 		span {
 			background-color: green;
+			border: 1px solid red;
 		}
 	</style>
 	<script type="text/javascript" src="sorter.js"></script>
@@ -75,7 +76,9 @@
 						to: 'New York JFK',
 						gate: '22',
 						seat: '7B',
-						baggage: 'auto'
+						baggage: 'auto',
+						add: 'additional value',
+						testvalue: 'test'
 					},
 					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate.&~& ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&~&'
 				}

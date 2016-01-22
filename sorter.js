@@ -139,18 +139,18 @@
 				    substitutions = {};
 
 				var r_phrase = '[\\w\\s\\.,:;!?\\$*+=\'\"\\[\\]\\{\\}\\(\\)]*',
-				    r_case = ['=\\w+:', r_phrase].join(''),
+				    r_case = ['=\\w+:', r_phrase, '(?:%\\w+)?', r_phrase].join(''),
 				    r_away = ['\\~', r_phrase].join('');
 
 				function returnValue (key, value) {
-					substitutions[key] = value.trim().replace(/\s+([\.,!?:;\]\)\}])/g, '$1').replace(/(\s)\s+/g, '$1');
+					substitutions[key] = value;
 					used[key] = true;
 					return value;
 				}
 
-				var str = format.replace(new RegExp(['(?:(\\W)(\\?\\w+):(?:(', r_case, ')*&:)*(', r_phrase, '))?\\W(%\\w+)\\b(?:(', r_phrase, ')&(?:(', r_away, ')&)?)?'].join(''), 'g'), function (s, f) {
+				var str = format.replace(new RegExp(['(?:(\\?\\w+):(?:(', r_case, ')*&:)*(', r_phrase, '))?(%\\w+)\\b(?:(', r_phrase, ')&(?:(', r_away, ')&)?)?'].join(''), 'g'), function (s) {
 
-					if (/^\W\%\w+$/.test(s))
+					if (/^\%\w+$/.test(s))
 						return s.replace(/\%(\w+)$/, function (s, key, pos, str) {
 							return returnValue(key, data[key]);
 						});
@@ -193,21 +193,21 @@
 
 					used[key] = true;
 
-					defVal = defVal.join(' ');
+					defVal = defVal.join('');
 
 					if (!data[key] && away)
-						return returnValue(key, [f, away].join(''));
+						return returnValue(key, away);
 
 					if (causes.length)
 						for (var i = 0, l = causes.length; i < l; ++i) {
 							var c = causes[i];
 							if (data[key] == c.value)
-								return returnValue(key, [f, c.exchange].join(''));
+								return returnValue(key, c.exchange.replace(new RegExp(['%', key].join(''), 'g'), data[key]));
 						}
 
-					return data[key] ? returnValue(key, [f, defVal].join('')) : '';
+					return data[key] ? returnValue(key, defVal) : '';
 
-				}).replace(/\s+([\.,!?:;\]\)\}])/g, '$1').replace(/(\s)\s+/g, '$1');
+				});
 
 				if (nostrict) {
 					for (var key in data) {
