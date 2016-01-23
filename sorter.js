@@ -57,7 +57,7 @@
 			throw "Incorrect card";
 
 		this.data = {};
-		this.format = format;
+		this.format = format || '?vehicle:=train:Take %vehicle %voyage from %from to %to.&:=bus:Take the %voyage %vehicle from %from to %to.&:=flight:From %from, take %vehicle %voyage to %to.&:Take %vehicle %voyage from %from to %to.&:~&?gate: Gate %gate.&:~& ?seat:Seat %seat&:~No seat assignment&.?baggage:=auto: Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&:~&';
 
 		for (var key in data)
 			this.data[key] = data[key];
@@ -137,161 +137,140 @@
 		},
 
 		_preRepresent: {
-			value: function (nostrict) {
+			value: function () {
 				var format = this.format || '',
 				    data = this.data,
-				    used = {},
-				    substitutions = {};
+				    substitutions = {},
+				    txt = '[\\w\\s\\.,:;!?\\$*+=\'\"\\[\\]\\{\\}\\(\\)]*';
+				var str = format.replace(/%(\w+)\b/g, function (found, key, pos, str) {
+					return data[key] || '';
+				}).replace(new RegExp(['\\?(\\w+):', '((?:=\\w+:', txt, '&:)*)(?:(', txt,, ')&:)(?:(~', txt, ')&)?'].join(''), 'g'), function (substr, key, causes, def, none) {
+					
+					if (!data[key]) {
+						substitutions[key] = none.substr(1);
+					} else {
+						var causeList = {};
 
-				var r_phrase = '[\\w\\s\\.,:;!?\\$*+=\'\"\\[\\]\\{\\}\\(\\)]*',
-				    r_case = ['=\\w+:', r_phrase, '(?:%\\w+)?', r_phrase].join(''),
-				    r_away = ['\\~', r_phrase].join('');
+						causes = causes.split('&:');
 
-				function returnValue (key, value) {
-					substitutions[key] = value;
-					used[key] = true;
-					return value;
-				}
-
-				var str = format.replace(new RegExp(['(?:(\\?\\w+):(?:(', r_case, ')*&:)*(', r_phrase, '))?(%\\w+)\\b(?:(', r_phrase, ')&(?:(', r_away, ')&)?)?'].join(''), 'g'), function (s) {
-
-					if (/^\%\w+$/.test(s))
-						return s.replace(/\%(\w+)$/, function (s, key, pos, str) {
-							return returnValue(key, data[key]);
-						});
-					var key, causes = [], away, defVal = [];
-
-					for (var i = 2, l = arguments.length - 2; i < l; ++i) {
-						var argument = arguments[i];
-
-						if (!key && /^\?\w+$/.test(argument)) {
-
-							key = argument.substr(1);
-
-						} else if (new RegExp(['^', r_case, '$'].join('')).test(argument)) {
-
-							argument = argument.split(':');
-
-							var tmp = [];
-
-							for (var a = 1, n = argument.length; a < n; ++a)
-								tmp.push(argument[a]);
-
-							causes.push({
-								value: argument[0].substr(1),
-								exchange: tmp.join(':')
-							});
-						} else if (new RegExp(['^', r_away, '$'].join('')).test(argument)) {
-
-							away = argument.substr(1) || '';
-
-						} else if (new RegExp(['^', r_phrase, '$'].join('')).test(argument)) {
-
-							defVal.push(argument);
-
-						} else if (/^%\w+$/.test(argument)) {
-							if (!key)
-								key = argument.substr(1);
-							defVal.push(data[key]);
-						}
-					}
-
-					used[key] = true;
-
-					defVal = defVal.join('');
-
-					if (!data[key] && away)
-						return returnValue(key, away);
-
-					if (causes.length)
 						for (var i = 0, l = causes.length; i < l; ++i) {
-							var c = causes[i];
-							if (data[key] == c.value)
-								return returnValue(key, c.exchange.replace(new RegExp(['%', key].join(''), 'g'), data[key]));
+							var c = causes[i].substr(1),
+							    index = c.indexOf(':');
+							causeList[c.substring(0, index)] = c.substr(++index);
 						}
-
-					return data[key] ? returnValue(key, defVal) : '';
-
-				});
-
-				if (nostrict) {
-					for (var key in data) {
-						if (used[key])
-							continue;
-						str = [str, [[[key.substr(0, 1).toUpperCase(), key.substr(1)].join(''), returnValue(key, data[key])].join(' '), '.'].join('')].join(' ');
+						substitutions[key] = causeList[data[key]] || def;
 					}
-				}
+					return substitutions[key] || '';
+				});
 
 				return {substitutions: substitutions, str: str};
 			},
 			enumerable: false
 		},
 		toString: {
-			value: function (nostrict) {
-				var str = this._preRepresent(nostrict).str;
+			value: function () {
+				var str = this._preRepresent().str;
 
 				if (this.next)
-					str = [str, this.next.toString(nostrict)].join('\n');
+					str = [str, this.next.toString()].join('\n');
 
 				return str;
 			},
 			enumerable: false
 		},
 		toDOM: {
-			value: function (nostrict) {
-				function _textNode (text) {
-					return document.createTextNode(text);
+			value: function (type) {
+
+				var tag, data = this.data, regular = [];
+
+				for (var key in data)
+					regular.push(['(?:\\b', data[key], '\\b)'].join(''));
+				regular = new RegExp(regular.join('|'), 'g');
+
+				switch (type) {
+					case 'list': tag = 'li'; break;
+					case 'paragraph':
+					default: tag = 'p'; break;
 				}
 
-				function _spanNode (text, className) {
+				var frag = document.createDocumentFragment(),
+				    line = document.createElement(tag);
+				    line.className = 'transport_card';
+
+				var prepared = this._preRepresent(),
+				    str = prepared.str,
+				    substitutions = prepared.substitutions,
+				    indexes = [];
+
+				function _spanKeys (text) {
+					var frag = document.createDocumentFragment(),
+					    result, j = 0;
+					regular.lastIndex = 0;
+
+					while ((result = regular.exec(text))) {
+						var i = result.index;
+						frag.appendChild(document.createTextNode(text.substring(j, i)));
+						j = i + result[0].length;
+
+						var span = document.createElement('span'),
+						    substr = text.substring(i, j);
+						span.appendChild(document.createTextNode(substr));
+
+						for (var key in data)
+							if (data[key] === substr) {
+								span.className = key;
+								break;
+							}
+
+						frag.appendChild(span);
+					}
+
+					frag.appendChild(document.createTextNode(text.substr(j)));
+
+					return frag;
+				}
+
+				function _toSpan (text, className) {
 					var span = document.createElement('span');
 
 					if (className)
 						span.className = className;
 
-					span.appendChild(_textNode(text));
+					span.appendChild(_spanKeys(text));
 
 					return span;
 				}
 
-				var frag = document.createDocumentFragment(),
-				    p = document.createElement('p');
-				    p.className = 'transport_card';
-
-				var format = (this.format || ''),
-				    tmp = this._preRepresent(nostrict),
-				    str = tmp.str,
-				    substitutions = tmp.substitutions,
-				    start = 0,
-				    indexes = [];
-
 				for (var key in substitutions) {
-					var subs = substitutions[key],
-					    index = str.indexOf(subs);
-					indexes.push({index: index, key: key}, {index: index + subs.length});
+					var subs = substitutions[key];
+					if (!subs)
+						continue;
+					var i = str.indexOf(subs);
+					indexes.push({index: i, key: key}, {index: i + subs.length, key: key});
 				}
 
-				indexes.sort(function (a, b) {return a.index - b.index;});
+				indexes.sort(function (a, b) {return a.index - b.index});
 
 				for (var i = 0, j = 0, l = indexes.length; i < l; ++i) {
 
 					var o = indexes[i],
-					    index = o.index;
-
-					if (i % 2)
-						p.appendChild(_spanNode(str.substring(j, index), o.key));
-					else
-						p.appendChild(_textNode(str.substring(j, index)));
-
+					    index = o.index,
+					    substr = str.substring(j, index);
+					if (i % 2) {
+						if (substr)
+							line.appendChild(_toSpan(substr, o.key));
+					} else {
+						line.appendChild(_spanKeys(substr));
+					}
 					j = index;
 				}
 
-				p.appendChild(_textNode(str.substring(j)));
+				line.appendChild(_spanKeys(str.substring(j)));
 
-				frag.appendChild(p);
+				frag.appendChild(line);
 
 				if (this.next)
-					frag.appendChild(this.next.toDOM(nostrict));
+					frag.appendChild(this.next.toDOM(type));
 				return frag;
 
 			},

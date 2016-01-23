@@ -9,14 +9,14 @@
 			border: 2px solid grey;
 		}
 
-		#strict:before {
-			content: "Strict mode:";
+		#paragraphs:before {
+			content: "As paragraphs:";
 			font-weight: bold;
 			font-size: 20px;
 		}
 
-		#nostrict:before {
-			content: "No strict mode:";
+		#list:before {
+			content: "As list:";
 			font-weight: bold;
 			font-size: 20px;
 		}
@@ -28,6 +28,11 @@
 		span {
 			background-color: green;
 			border: 1px solid red;
+		}
+
+		span span {
+			background-color: blue;
+			border-radius: 7px;
 		}
 	</style>
 	<script type="text/javascript" src="sorter.js"></script>
@@ -43,8 +48,7 @@
 						to: 'Barcelona',
 						seat: '45B',
 						testvalue: 'test'
-					},
-					format: 'Take %vehicle %voyage from %from to %to. ?seat:Seat %seat&~No seat assignment&.'
+					}
 				},
 				{
 					data: {
@@ -53,8 +57,7 @@
 						from: 'Barcelona',
 						to: 'Gerona Airport',
 						add: 'additional value'
-					},
-					format: 'Take the %voyage %vehicle from %from to %to. ?seat:Seat %seat&~No seat assignment&.'
+					}
 				},
 				{
 					data: {
@@ -65,8 +68,7 @@
 						gate: '45B',
 						seat: '3A',
 						baggage: '344'
-					},
-					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate.&~& ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&~&'
+					}
 				},
 				{
 					data: {
@@ -79,8 +81,7 @@
 						baggage: 'auto',
 						add: 'additional value',
 						testvalue: 'test'
-					},
-					format: 'From %from, take %vehicle %voyage to %to. ?gate:Gate %gate.&~& ?seat:Seat %seat&~No seat assignment&. ?baggage:=auto:Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&~&'
+					}
 				}
 			],
 			    cards = [];
@@ -94,13 +95,10 @@
 
 			var list = sortCards.apply(this, cards);
 
-			console.log('Strict mode:');
 			console.log(list.toString());
-			console.log('\nNo strict mode:');
-			console.log(list.toString(1));
 
-			document.getElementById('strict').appendChild(list.toDOM());
-			document.getElementById('nostrict').appendChild(list.toDOM(1));
+			document.getElementById('paragraphs').appendChild(list.toDOM());
+			document.getElementById('list').firstElementChild.appendChild(list.toDOM('list'));
 
 		};
 	})()
@@ -108,7 +106,9 @@
 
 </head>
 <body>
-	<div id="strict"></div>
-	<div id="nostrict"></div>
+	<div id="paragraphs"></div>
+	<div id="list">
+		<ol></ol>
+	</div>
 </body>
 </html>
