@@ -1,10 +1,12 @@
 (function () {
 	"use strict";
 
+	// Константы
 	var SUBST = '[\\w\\s\\.,:;!?\\$*+=\\%\'\"\\[\\]\\{\\}\\(\\)]*';
 
 	var FORMAT = '?vehicle:=train:Take %vehicle %voyage from %from to %to.&:=bus:Take the %voyage %vehicle from %from to %to.&:=flight:From %from, take %vehicle %voyage to %to.&:Take %vehicle %voyage from %from to %to.&:~&?gate: Gate %gate.&:~& ?seat:Seat %seat&:~No seat assignment&.?baggage:=auto: Baggage will be automatically transferred from your last leg.&:Baggage drop at ticket counter %baggage.&:~&';
 
+	//Метод сортировки
 	function sort () {
 		var items = [];
 
@@ -55,6 +57,7 @@
 		return items[0];
 	}
 
+	//Вспомогательная функция, использующаяся для в методах представления для парсинга
 	function _causeList (causes) {
 		var res = {};
 		causes = causes.split('&:');
@@ -66,28 +69,32 @@
 		return res;
 	}
 
+
+	// Конструктор карточек
 	function Card (data, format) {
 
 		if (!(data.from && data.to && data.vehicle && data.voyage))
 			throw "Incorrect card";
 
-		this.data = {};
-		this.format = format || FORMAT;
+		this.data = {}; // Данные карточки
+		this.format = format || FORMAT; // Формат представления
 
+		//Это регулярное выражение используется в разных местах методов представления, поэтому я задал его, как свойство
 		this.subestRegExp = new RegExp(['\\?(\\w+):', '((?:=\\w+:', SUBST, '&:)*)(?:(', SUBST, ')&:)(?:(~', SUBST, ')&)?'].join(''), 'g');
 
+		// На случай, если объект с входными данными будет использоваться где-то еще
 		for (var key in data)
 			this.data[key] = data[key];
 	}
 
 	Object.defineProperties(Card.prototype, {
-		begin: {
+		begin: { /*Начало списка*/
 			get: function () {
 				return this.first.data.from;
 			},
 			enumerable: false
 		},
-		currentStep: {
+		currentStep: { /*Текстовое представление только текущей карточки*/
 			get: function () {
 				var format = this.format || '',
 				    data = this.data;
@@ -104,7 +111,7 @@
 			},
 			enumerable: false
 		},
-		currenStepToDom: {
+		currenStepToDom: { /*Представление текущей карточки в качестве DOM*/
 			value: function (type) {
 
 				var tag,
@@ -185,35 +192,31 @@
 			},
 			enumerable: false
 		},
-		deepness: {
+		deepness: { /*Колличество карточек, начиная с этой*/
 			get: function () {
-				if (!this.next)
-					return 1;
-				return this.next.deepness + 1;
+				return (this.next ? this.next.deepness : 0) + 1;
 			},
 			enumerable: false
 		},
-		end: {
+		end: { /*Конец построенной части маршрута, используется для сортировки*/
 			get: function () {
 				return this.last.data.to;
 			},
 			enumerable: false
 		},
-		first: {
+		first: { /*Самая первая карточка*/
 			get: function () {
-				if (!this.prev)
-					return this;
-				return this.prev.first;
+				return this.prev ? this.prev.first : this;
 			},
 			enumerable: false
 		},
-		from: {
+		from: { /*Текущий пункт отбытия, используется для сортировки*/
 			get: function () {
 				return this.data.from;
 			},
 			enumerable: false
 		},
-		fullPath: {
+		fullPath: { /*Текстовое представление всего маршрута, начиная стекущего учатска*/
 			get: function () {
 				var str = this.currentStep;
 
@@ -224,7 +227,7 @@
 			},
 			enumerable: false
 		},
-		fullPathToDOM :{
+		fullPathToDOM :{/*Представление всего маршрута, начиная с текущего участка в вид DOM*/
 			value: function (type) {
 				var frag = document.createDocumentFragment();
 
@@ -235,7 +238,7 @@
 			},
 			enumerable: false
 		},
-		get: {
+		get: { /*Получить карточку, занимающую положение deep относительно данной*/
 			value: function (deep) {
 				if (!deep)
 					return this;
@@ -250,22 +253,20 @@
 			},
 			enumerable: false
 		},
-		last: {
+		last: { /*Самая последняя карточка*/
 			get: function () {
-				if (!this.next)
-					return this;
-				return this.next.last;
+				return this.next ? this.next.last : this;
 			},
 			enumerable: false
 		},
-		setProperty: {
+		setProperty: {/*Установка свойства*/
 			value: function (name, value) {
 				this.data[name] = value;
 				return this;
 			},
 			enumerable: false
 		},
-		setFormat: {
+		setFormat: { /*Изменение формата*/
 			value: function (format) {
 				this.format = format || FORMAT;
 				
@@ -277,6 +278,7 @@
 		},
 	});
 
+	// В window передаются только конструктор и метод сортировки
 	window.sortCards = sort;
 	window.Card = Card;
 })()
