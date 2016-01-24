@@ -99,14 +99,14 @@
 				var format = this.format || '',
 				    data = this.data;
 
-				return format.replace(/%(\w+)\b/g, function (found, key, pos, str) {
-					return data[key] || '';
-				}).replace(this.subestRegExp, function (substr, key, causes, def, none) {
+				return format.replace(this.subestRegExp, function (substr, key, causes, def, none) {
 					
 					if (!data[key])
 						return none.substr(1) || '';
 
 					return _causeList(causes)[data[key]] || def || '';
+				}).replace(/%(\w+)\b/g, function (found, key, pos, str) {
+					return data[key] || '';
 				});
 			},
 			enumerable: false
