@@ -95,10 +95,14 @@
 
 			var list = sortCards.apply(this, cards);
 
-			console.log(list.toString());
+			console.log('Current step:')
+			console.log(list.currentStep);
 
-			document.getElementById('paragraphs').appendChild(list.toDOM());
-			document.getElementById('list').firstElementChild.appendChild(list.toDOM('list'));
+			console.log('\nFull path:')
+			console.log(list.fullPath);
+
+			document.getElementById('paragraphs').appendChild(list.fullPathToDOM());
+			document.getElementById('list').firstElementChild.appendChild(list.fullPathToDOM('list'));
 
 		};
 	})()

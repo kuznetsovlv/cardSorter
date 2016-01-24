@@ -70,115 +70,13 @@
 			},
 			enumerable: false
 		},
-		deepness: {
+		currentStep: {
 			get: function () {
-				if (!this.next)
-					return 1;
-				return this.next.deepness + 1;
+				return this._preRepresent().str;
 			},
 			enumerable: false
 		},
-		end: {
-			get: function () {
-				return this.last.data.to;
-			},
-			enumerable: false
-		},
-		first: {
-			get: function () {
-				if (!this.prev)
-					return this;
-				return this.prev.first;
-			},
-			enumerable: false
-		},
-		from: {
-			get: function () {
-				return this.data.from;
-			},
-			enumerable: false
-		},
-		get: {
-			value: function (deep) {
-				if (!deep)
-					return this;
-				if (deep > 0) {
-					if (!this.next)
-						return undefined;
-					return this.next.get(--deep);
-				}
-				if (!this.prev)
-					return undefined;
-				return this.prev.get(++deep);
-			},
-			enumerable: false
-		},
-		last: {
-			get: function () {
-				if (!this.next)
-					return this;
-				return this.next.last;
-			},
-			enumerable: false
-		},
-		setProperty: {
-			value: function (name, value) {
-				this.data[name] = value;
-				return this;
-			},
-			enumerable: false
-		},
-		setFormat: {
-			value: function (format) {
-				this.format = format;
-				return this;
-			},
-			enumerable: false
-		},
-
-		_preRepresent: {
-			value: function () {
-				var format = this.format || '',
-				    data = this.data,
-				    substitutions = {},
-				    txt = '[\\w\\s\\.,:;!?\\$*+=\'\"\\[\\]\\{\\}\\(\\)]*';
-				var str = format.replace(/%(\w+)\b/g, function (found, key, pos, str) {
-					return data[key] || '';
-				}).replace(new RegExp(['\\?(\\w+):', '((?:=\\w+:', txt, '&:)*)(?:(', txt,, ')&:)(?:(~', txt, ')&)?'].join(''), 'g'), function (substr, key, causes, def, none) {
-					
-					if (!data[key]) {
-						substitutions[key] = none.substr(1);
-					} else {
-						var causeList = {};
-
-						causes = causes.split('&:');
-
-						for (var i = 0, l = causes.length; i < l; ++i) {
-							var c = causes[i].substr(1),
-							    index = c.indexOf(':');
-							causeList[c.substring(0, index)] = c.substr(++index);
-						}
-						substitutions[key] = causeList[data[key]] || def;
-					}
-					return substitutions[key] || '';
-				});
-
-				return {substitutions: substitutions, str: str};
-			},
-			enumerable: false
-		},
-		toString: {
-			value: function () {
-				var str = this._preRepresent().str;
-
-				if (this.next)
-					str = [str, this.next.toString()].join('\n');
-
-				return str;
-			},
-			enumerable: false
-		},
-		toDOM: {
+		currenStepToDom: {
 			value: function (type) {
 
 				var tag, data = this.data, regular = [];
@@ -193,8 +91,7 @@
 					default: tag = 'p'; break;
 				}
 
-				var frag = document.createDocumentFragment(),
-				    line = document.createElement(tag);
+				var line = document.createElement(tag);
 				    line.className = 'transport_card';
 
 				var prepared = this._preRepresent(),
@@ -267,12 +164,127 @@
 
 				line.appendChild(_spanKeys(str.substring(j)));
 
-				frag.appendChild(line);
+				return line;
+
+			},
+			enumerable: false
+		},
+		deepness: {
+			get: function () {
+				if (!this.next)
+					return 1;
+				return this.next.deepness + 1;
+			},
+			enumerable: false
+		},
+		end: {
+			get: function () {
+				return this.last.data.to;
+			},
+			enumerable: false
+		},
+		first: {
+			get: function () {
+				if (!this.prev)
+					return this;
+				return this.prev.first;
+			},
+			enumerable: false
+		},
+		from: {
+			get: function () {
+				return this.data.from;
+			},
+			enumerable: false
+		},
+		fullPath: {
+			get: function () {
+				var str = this._preRepresent().str;
 
 				if (this.next)
-					frag.appendChild(this.next.toDOM(type));
-				return frag;
+					str = [str, this.next.fullPath].join('\n');
 
+				return str;
+			},
+			enumerable: false
+		},
+		fullPathToDOM :{
+			value: function (type) {
+				var frag = document.createDocumentFragment();
+
+				frag.appendChild(this.currenStepToDom(type));
+				if (this.next)
+					frag.appendChild(this.next.fullPathToDOM(type));
+				return frag;
+			},
+			enumerable: false
+		},
+		get: {
+			value: function (deep) {
+				if (!deep)
+					return this;
+				if (deep > 0) {
+					if (!this.next)
+						return undefined;
+					return this.next.get(--deep);
+				}
+				if (!this.prev)
+					return undefined;
+				return this.prev.get(++deep);
+			},
+			enumerable: false
+		},
+		last: {
+			get: function () {
+				if (!this.next)
+					return this;
+				return this.next.last;
+			},
+			enumerable: false
+		},
+		setProperty: {
+			value: function (name, value) {
+				this.data[name] = value;
+				return this;
+			},
+			enumerable: false
+		},
+		setFormat: {
+			value: function (format) {
+				this.format = format;
+				return this;
+			},
+			enumerable: false
+		},
+
+		_preRepresent: {
+			value: function () {
+				var format = this.format || '',
+				    data = this.data,
+				    substitutions = {},
+				    txt = '[\\w\\s\\.,:;!?\\$*+=\'\"\\[\\]\\{\\}\\(\\)]*';
+				var str = format.replace(/%(\w+)\b/g, function (found, key, pos, str) {
+					return data[key] || '';
+				}).replace(new RegExp(['\\?(\\w+):', '((?:=\\w+:', txt, '&:)*)(?:(', txt,, ')&:)(?:(~', txt, ')&)?'].join(''), 'g'), function (substr, key, causes, def, none) {
+					
+					if (!data[key]) {
+						substitutions[key] = none.substr(1);
+					} else {
+						var causeList = {};
+
+						causes = causes.split('&:');
+
+						for (var i = 0, l = causes.length; i < l; ++i) {
+							var c = causes[i].substr(1),
+							    index = c.indexOf(':');
+							causeList[c.substring(0, index)] = c.substr(++index);
+						}
+						substitutions[key] = causeList[data[key]] || def;
+					}
+					return substitutions[key] || '';
+				});
+
+				return {substitutions: substitutions, str: str};
 			},
 			enumerable: false
 		}
